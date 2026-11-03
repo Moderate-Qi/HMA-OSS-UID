@@ -1,4 +1,4 @@
-## Credits
+# Credits
 
 - [DoNotTryAccessibility](https://github.com/Nitsuya/DoNotTryAccessibility) - settings and accessibility hiding code
 - [SettingsFirewall](https://github.com/canyie/SettingsFirewall) - settings replacement idea
@@ -10,6 +10,8 @@
 - [ReZygisk](https://github.com/PerformanC/ReZygisk) - status update scripts
 - All translators
 - All root community
-- You (if you are not a robot 🤖)
+- Project users and contributors
 
-### !!! Note that this MD file isn't allowed to translate !!!
+
+- [longze777/UID-](https://github.com/longze777/UID-) — UID component reference
+- [Moderate-Qi](https://github.com/Moderate-Qi) — UID integration, manager migration and enhanced documentation

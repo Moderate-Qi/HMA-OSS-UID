@@ -63,6 +63,14 @@ object ConfigManager {
             saveConfig()
         }
 
+    var uidFilterEnabled: Boolean
+        get() = config.uidFilterEnabled && config.uidFilterRevision == 3
+        set(value) {
+            config.uidFilterRevision = 3
+            config.uidFilterEnabled = value
+            saveConfig()
+        }
+
     var errorOnlyLog: Boolean
         get() = config.errorOnlyLog
         set(value) {

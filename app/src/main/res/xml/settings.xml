@@ -73,6 +73,11 @@
 
     <PreferenceCategory android:title="@string/settings_module">
         <Preference
+            android:key="uidFilterPanel"
+            android:title="UID 过滤（实验）"
+            android:summary="跟随 HMA 作用名单；可关闭并恢复，无需整机重启"
+            app:singleLineTitle="false" />
+        <Preference
             app:widgetLayout="@layout/preference_sub_menu_indicator"
             android:icon="@drawable/add_moderator_24px"
             android:key="defaultConfig"
@@ -90,12 +95,6 @@
             app:singleLineTitle="false"
             android:title="@string/settings_disable_activity_launch_protection"
             android:summary="@string/settings_disable_activity_launch_protection_summary" />
-        <SwitchPreferenceCompat
-            android:icon="@drawable/tab_close_inactive_24px"
-            android:key="webViewProtection"
-            app:singleLineTitle="false"
-            android:title="@string/settings_webview_protection"
-            android:summary="@string/settings_webview_protection_summary" />
         <MultiSelectListPreference
             android:icon="@drawable/syringe_24px"
             android:key="disableHooks"

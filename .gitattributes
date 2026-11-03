@@ -10,3 +10,13 @@
 *.dex binary
 *.jar binary
 *.png binary
+
+# Preserve publication images and approved documents verbatim.
+*.jpg binary
+/CHANGELOG_LOCAL.md -text
+/CREDITS.md -text
+/LICENSE.md -text
+/NOTICE.md -text
+/README.md -text
+/RELEASE_NOTES.md -text
+/BUILDING.md -text

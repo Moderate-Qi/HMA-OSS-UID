@@ -57,4 +57,8 @@ interface IHMAService {
     void reloadConfigFromFile() = 25;
 
     int[] getUserProfiles() = 26;
+
+    String getUidFilterStatus() = 27;
+
+    int restartUidFilterTargets() = 28;
 }

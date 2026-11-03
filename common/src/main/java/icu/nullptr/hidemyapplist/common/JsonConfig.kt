@@ -14,6 +14,12 @@ data class JsonConfig(
      */
     var detailLog: Boolean = false,
 
+    /** Enabled by default; a user's explicit switch choice remains persistent. */
+    var uidFilterEnabled: Boolean = true,
+
+    /** Current notification engine used for newly created configurations. */
+    var uidFilterRevision: Int = 3,
+
     /**
      * Enable/disable error-only logging
      *

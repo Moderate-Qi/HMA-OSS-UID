@@ -1,0 +1,7 @@
+# Copy to local.properties; keep actual signing values on your own machine.
+sdk.dir=/path/to/android-sdk
+fileDir=/path/to/local-signing.jks
+storePassword=YOUR_LOCAL_PASSWORD
+keyAlias=YOUR_LOCAL_ALIAS
+keyPassword=YOUR_LOCAL_PASSWORD
+localBuild=true

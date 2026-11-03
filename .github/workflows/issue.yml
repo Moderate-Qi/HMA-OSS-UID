@@ -1,10 +1,8 @@
 name: Issue check
 
 on:
-  schedule:
-  - cron: "0 0 */15 * *"
-  issues:
-    types: [labeled]
+  workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
   build:

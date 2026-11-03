@@ -286,6 +286,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings), PreferenceFragmen
             preferenceManager.preferenceDataStore = SettingsPreferenceDataStore()
             setPreferencesFromResource(R.xml.settings, rootKey)
 
+            findPreference<Preference>("uidFilterPanel")?.setOnPreferenceClickListener {
+                startActivity(Intent(requireContext(), org.frknkrc44.hma_oss.ui.activity.UidFilterActivity::class.java))
+                true
+            }
+
             findPreference<ListPreference>("language")?.let {
                 val userLocale = getLocale()
                 val entries = buildList {

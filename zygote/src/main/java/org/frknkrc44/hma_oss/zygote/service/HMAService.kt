@@ -6,6 +6,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.IPackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.FileObserver
 import android.os.ParcelFileDescriptor
 import android.os.RemoteException
 import android.provider.Settings
@@ -47,9 +48,9 @@ import org.frknkrc44.hma_oss.zygote.hook.PmsHookTarget31
 import org.frknkrc44.hma_oss.zygote.hook.PmsHookTarget33
 import org.frknkrc44.hma_oss.zygote.hook.PmsHookTarget34
 import org.frknkrc44.hma_oss.zygote.hook.PmsPackageEventsHook
+import org.frknkrc44.hma_oss.zygote.hook.UsageStatsHook
 import org.frknkrc44.hma_oss.zygote.hook.ZygoteHook
-import org.frknkrc44.hma_oss.zygote.util.BrowserUtils.getDefaultBrowser
-import org.frknkrc44.hma_oss.zygote.util.BrowserUtils.getWebviewProvider
+import org.frknkrc44.hma_oss.zygote.util.ActivityManagerUtils
 import org.frknkrc44.hma_oss.zygote.util.Logcat.logD
 import org.frknkrc44.hma_oss.zygote.util.Logcat.logE
 import org.frknkrc44.hma_oss.zygote.util.Logcat.logI
@@ -61,7 +62,6 @@ import org.frknkrc44.hma_oss.zygote.util.PackageManagerUtils.isConflictingModule
 import org.frknkrc44.hma_oss.zygote.util.ServiceUtils.ensureFileIsRW
 import org.frknkrc44.hma_oss.zygote.util.ServiceUtils.findAndVerifyAppSignature
 import org.frknkrc44.hma_oss.zygote.util.UserManagerUtils
-import rikka.hidden.compat.ActivityManagerApis
 import java.io.File
 import java.lang.reflect.Modifier
 import java.nio.file.Files
@@ -91,6 +91,11 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
     private lateinit var oldLogFile: File
     private lateinit var moduleStatusFile: File
 
+    private lateinit var configFileListener: FileObserver
+    private var writtenByManager = false
+
+    private val uidPublisher by lazy { UidPolicyPublisher(this, File(dataDir, "uid_scope")) }
+
     private val configLock = Any()
     private val loggerLock = Any()
     val systemApps = mutableSetOf<String>()
@@ -98,7 +103,7 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
     internal var appUid = 0
         private set
 
-    var config = JsonConfig().apply { detailLog = true }
+    @Volatile var config = JsonConfig().apply { detailLog = true }
         private set
 
     init {
@@ -113,7 +118,7 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
         saveModuleStatus()
         UserService.service = this
         loadFilterCount()
-        loadConfig()
+        reloadConfigFromFile()
 
         appUid = findAndVerifyAppSignature(pms)
 
@@ -128,6 +133,18 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
                 }
                 loadPresetCache()
 
+                configFileListener = object : FileObserver(configFile, CLOSE_WRITE or ATTRIB) {
+                    override fun onEvent(event: Int, path: String?) {
+                        if (writtenByManager) {
+                            writtenByManager = false
+                            return
+                        }
+
+                        reloadConfigFromFile()
+                    }
+                }
+                configFileListener.startWatching()
+
                 managerWorkMode = Constants.MANAGER_WORK_MODE_OK
             }
 
@@ -135,6 +152,7 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
         }
 
         logI(TAG) { "HMA service initialized in mode $managerWorkMode" }
+        if (managerWorkMode == Constants.MANAGER_WORK_MODE_OK) uidPublisher.schedule()
     }
 
     private fun searchDataDir() {
@@ -174,6 +192,15 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
         oldLogFile = File(logDir, "old.log")
         moduleStatusFile = File(dataDir, "status.json")
 
+        // remove the old filter count
+        File("$dataDir/filter_count").also {
+            try {
+                if (it.exists()) it.delete()
+            } catch (cause: Throwable) {
+                logW(TAG, cause) { "Failed to delete filter count, skip it" }
+            }
+        }
+
         clearLogs()
 
         logcatAvailable = true
@@ -203,43 +230,6 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
         } catch (cause: Throwable) {
             logE(TAG, cause) { "An error occurred while writing the status JSON" }
         }
-    }
-
-    private fun loadConfig() {
-        // remove the old filter count
-        File("$dataDir/filter_count").also {
-            try {
-                if (it.exists()) it.delete()
-            } catch (cause: Throwable) {
-                logW(TAG, cause) { "Failed to delete filter count, skip it" }
-            }
-        }
-
-        if (!configFile.exists()) {
-            logI(TAG) { "Config file not found" }
-            return
-        }
-
-        val loading = try {
-            val json = configFile.readText()
-            JsonConfig.parse(json)
-        } catch (cause: Throwable) {
-            logW(TAG, cause) { "Failed to parse config json, skip it" }
-
-            config
-        }
-
-        if (loading.configVersion != BuildConfig.CONFIG_VERSION) {
-            logW(TAG) { "Config version mismatch, need to reload" }
-            return
-        }
-
-        if (config != loading) {
-            loading.cleanRemnantsFromConfig()
-            config = loading
-        }
-
-        logI(TAG) { "Config loaded" }
     }
 
     private fun loadFilterCount() {
@@ -322,6 +312,7 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
         frameworkHooks.add(ContentProviderHook())
         frameworkHooks.add(ImmHook())
         frameworkHooks.add(ZygoteHook())
+        frameworkHooks.add(UsageStatsHook())
 
         frameworkHooks.forEach(IFrameworkHook::load)
         logI(TAG) { "Hooks installed" }
@@ -399,25 +390,13 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
         if (caller == query) return false
         val appConfig = config.scope[caller] ?: return false
 
-        if (config.webViewProtection) {
-            // check for current webview
-            val webviewProvider = getWebviewProvider()
-            if (webviewProvider == caller || webviewProvider == query) return false
-
-            // check for current browser
-            val currentBrowser = getDefaultBrowser(pmn, userId)
-            if (currentBrowser == caller || currentBrowser == query) return false
-        }
-
         if (query in appConfig.extraAppList) return !appConfig.useWhitelist
         if (query in appConfig.extraOppositeAppList) return appConfig.useWhitelist
 
         for (tplName in appConfig.applyTemplates) {
             val tpl = config.templates[tplName] ?: continue
             if (query in tpl.appList) {
-                if (isAppInGMSIgnoredPackages(caller, query)) return false
-
-                return !appConfig.useWhitelist
+                return !isAppInGMSIgnoredPackages(caller, query) && !appConfig.useWhitelist
             }
         }
 
@@ -446,15 +425,11 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
 
     fun shouldHideActivityLaunch(caller: String?, query: String?, userId: Int): Boolean {
         val appConfig = config.scope[caller]
-        if (appConfig != null && shouldHide(caller, query, userId)) {
-            return if (appConfig.invertActivityLaunchProtection) {
-                config.disableActivityLaunchProtection
-            } else {
-                !config.disableActivityLaunchProtection
-            }
+        return appConfig != null && shouldHide(caller, query, userId) && if (appConfig.invertActivityLaunchProtection) {
+            config.disableActivityLaunchProtection
+        } else {
+            !config.disableActivityLaunchProtection
         }
-
-        return false
     }
 
     fun shouldHideInstallationSource(caller: String?, query: String?, callingUser: Int): Int {
@@ -507,6 +482,8 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
     fun writeConfig(json: String) {
         if (!ensureManagerWorkModeOK()) return
 
+        writtenByManager = true
+
         synchronized(configLock) {
             try {
                 val newConfig = JsonConfig.parse(json)
@@ -516,6 +493,7 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
                     return
                 }
                 config = newConfig
+                if (!newConfig.uidFilterEnabled || newConfig.uidFilterRevision != 3) uidPublisher.disableImmediately()
                 ensureFileIsRW(configFile, true)
                 configFile.writeText(json)
                 dataHolder.clearUidCache()
@@ -530,6 +508,10 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
         }
 
         writeFilterCount(true)
+
+        uidPublisher.schedule()
+
+        writtenByManager = false
     }
 
     private fun writeFilterCount(force: Boolean = false) {
@@ -550,7 +532,7 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
         }
     }
 
-    override fun getServiceVersion() = BuildConfig.SERVICE_VERSION
+    override fun getServiceVersion() = BuildConfig.APP_VERSION_CODE
 
     override fun getFilterCount() = dataHolder.filterHolder.totalCount
 
@@ -625,6 +607,7 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
                 }
             }
         }
+        uidPublisher.schedule()
     }
 
     override fun getPackagesForPreset(presetName: String) =
@@ -633,7 +616,7 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
     override fun forceStop(packageName: String?, userId: Int) {
         binderLocalScope {
             try {
-                ActivityManagerApis.forceStopPackage(packageName, userId)
+                ActivityManagerUtils.forceStopPackage(packageName!!, userId)
             } catch (cause: Throwable) {
                 logE(TAG, cause) { "An error occurred while force stopping the package" }
             }
@@ -698,6 +681,7 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
             ensureFileIsRW(presetCacheFileNew, true)
             presetCacheFileNew.writeText(dataHolder.presetCache.toString())
             logD(TAG) { "Preset cache synced" }
+            uidPublisher.schedule()
         } catch (cause: Throwable) {
             logE(TAG, cause) { "Failed to write into preset cache file" }
         }
@@ -721,12 +705,12 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
         val hookList = mutableListOf<String>()
 
         for ((className, hookElements) in hooker.hooks) {
-            for (element in hookElements) {
+            for ((_, methodName, _, _, _, argumentCount) in hookElements) {
                 hookList.add(
                     JsonConfig.HookItem(
                         className,
-                        element.methodName,
-                        element.argumentCount,
+                        methodName,
+                        argumentCount,
                     ).toString()
                 )
             }
@@ -768,7 +752,7 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
         if (pkgInfo.applicationInfo?.enabled == true) {
             val intentToLaunch = getLaunchIntentForPackageAsUser(packageName, userId)
             if (intentToLaunch != null) {
-                ActivityManagerApis.startActivity(intentToLaunch, null, userId)
+                ActivityManagerUtils.startActivity(intentToLaunch, userId)
             } else {
                 throw RemoteException("No main activity found to launch this app")
             }
@@ -802,17 +786,39 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
     }
 
     override fun reloadConfigFromFile() {
-        val loading = runCatching {
-            assert(configFile.exists())
-            val json = configFile.readText()
-            JsonConfig.parse(json)
-        }.getOrElse {
-            logE(TAG, it) { "Failed to parse config.json" }
+        if (!configFile.exists()) {
+            logI(TAG) { "Config file not found" }
             return
         }
 
-        config = loading
+        val loading = try {
+            ensureFileIsRW(configFile, true)
+            val json = configFile.readText()
+            JsonConfig.parse(json)
+        } catch (cause: Throwable) {
+            logW(TAG, cause) { "Failed to parse config json, skip it" }
+
+            config
+        }
+
+        if (loading.configVersion != BuildConfig.CONFIG_VERSION) {
+            logW(TAG) { "Config version mismatched, trying to change it" }
+
+            loading.configVersion = BuildConfig.CONFIG_VERSION
+        }
+
+        if (config != loading) {
+            loading.cleanRemnantsFromConfig()
+            config = loading
+        }
+
+        logI(TAG) { "Config loaded" }
+        if (managerWorkMode == Constants.MANAGER_WORK_MODE_OK) uidPublisher.schedule()
     }
 
     override fun getUserProfiles() = binderLocalScope { UserManagerUtils.userIds }
+
+    override fun getUidFilterStatus() = uidPublisher.status
+
+    override fun restartUidFilterTargets(): Int = uidPublisher.restartTargets()
 }

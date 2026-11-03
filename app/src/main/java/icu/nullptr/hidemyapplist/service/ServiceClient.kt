@@ -139,4 +139,8 @@ object ServiceClient : IHMAService, IBinder.DeathRecipient {
     }
 
     override fun getUserProfiles() = service?.userProfiles
+
+    override fun getUidFilterStatus() = service?.uidFilterStatus ?: "UNAVAILABLE"
+
+    override fun restartUidFilterTargets() = service?.restartUidFilterTargets() ?: 0
 }
