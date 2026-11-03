@@ -18,6 +18,8 @@
 . "$MODPATH/customize.d/35-install-manager-app.sh"
 [ -f "$MODPATH/customize.d/40-setup-module-status.sh" ] || abort "! Part '40-setup-module-status.sh' not found"
 . "$MODPATH/customize.d/40-setup-module-status.sh"
+[ -f "$MODPATH/customize.d/41-fix-one-click-hide-mess.sh" ] || abort "! Part '41-fix-one-click-hide-mess.sh' not found"
+. "$MODPATH/customize.d/41-fix-one-click-hide-mess.sh"
 [ -f "$MODPATH/customize.d/90-restore-module-permission.sh" ] || abort "! Part '90-restore-module-permission.sh' not found"
 . "$MODPATH/customize.d/90-restore-module-permission.sh"
 

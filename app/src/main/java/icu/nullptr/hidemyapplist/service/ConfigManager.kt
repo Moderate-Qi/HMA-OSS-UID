@@ -122,13 +122,6 @@ object ConfigManager {
             saveConfig()
         }
 
-    var webViewProtection: Boolean
-        get() = config.webViewProtection
-        set(value) {
-            config.webViewProtection = value
-            saveConfig()
-        }
-
     var defaultConfig: JsonConfig.AppConfig?
         get() = config.defaultConfig
         set(value) {

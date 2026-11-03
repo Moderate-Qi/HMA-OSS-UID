@@ -17,8 +17,8 @@ with zipfile.ZipFile(apks[0]) as apk, zipfile.ZipFile(target, 'w', zipfile.ZIP_D
     out.write(root / 'uid-native/restore-backend.sh', 'restore-backend.sh')
     out.writestr('payload/module.prop', '''id=hma_oss_zygisk
 name=HMA-OSS Zygisk + UID
-version=1eda3ef1-UID3.1
-versionCode=7304663
+version=8d8116e3-UID3.1
+versionCode=7304664
 minSdkVersion=29
 author=frknkrc44; local scoped UID integration
 description=System service loaded by HMA; optional scoped ARM64 UID filtering

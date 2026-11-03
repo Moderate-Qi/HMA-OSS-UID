@@ -2,7 +2,7 @@
 
 在 HMA-OSS 中集成 UID 过滤，让应用列表隐藏和 UID 查询隐藏共同使用一套规则。选择作用应用、配置隐藏列表后，UID 过滤自动跟随，管理起来更直接。
 
-基于版本：**1eda3ef1**。增强维护：[Moderate-Qi](https://github.com/Moderate-Qi)。
+基于版本：**8d8116e3**。增强维护：[Moderate-Qi](https://github.com/Moderate-Qi)。
 
 ## 相比原版增加
 
@@ -15,11 +15,11 @@
 
 ## 上游更新
 
-当前底包为 `future-1eda3ef1`，继承上游 Android 10/11 部分 Hook 的统一处理、`checkUidPermission` 兼容改进，以及应用启动权限 Hook 的调整。上游的权限查询处理与集成的 UID 过滤一起保留，分别完善应用信息和 UID 查询的配套结果。
+当前底包为 `future-8d8116e3`，继承上游配置目录权限修复、服务初始化处理，以及 WebView 保护残留配置的清理，配置版本升级为 94。UID3.1 过滤、默认开启、开机恢复和管理器配置迁移功能继续沿用。
 
 ## 使用方式
 
-1. 从本仓库 Releases 下载 `HMA-OSS-1eda3ef1-UID3.1-arm64.zip`，在 SukiSU Ultra 中刷入并重启。
+1. 从本仓库 Releases 下载 `HMA-OSS-8d8116e3-UID3.1-arm64.zip`，在 SukiSU Ultra 中刷入并重启。
 2. 打开配套 HMA 管理器，按日常需求设置作用应用和隐藏列表。
 3. 在“UID 过滤”页面查看开关与规则状态，`READY` 表示规则已生成。
 4. 调整 UID 开关或规则后，重新打开相关作用应用。
@@ -72,7 +72,7 @@
 
 ## 来源、版权与许可证
 
-上游项目：[future-1eda3ef1；frknkrc44、Kr328、Vladimir Kozelkov 及原项目贡献者](https://github.com/frknkrc44/HMA-OSS)。功能增强、集成和文档由 Moderate-Qi 维护，保留原作者署名与第三方版权记录。
+上游项目：[future-8d8116e3；frknkrc44、Kr328、Vladimir Kozelkov 及原项目贡献者](https://github.com/frknkrc44/HMA-OSS)。功能增强、集成和文档由 Moderate-Qi 维护，保留原作者署名与第三方版权记录。
 
 [AGPL-3.0](LICENSE.md)，UID 与 Loader 组件分别保留 [Apache-2.0](uid-native/UID-LICENSE) 和 [MIT](uid-native/LOADER-LICENSE)。具体修改、来源和构建入口见 [CHANGELOG_LOCAL.md](CHANGELOG_LOCAL.md)、[NOTICE.md](NOTICE.md) 和 [BUILDING.md](BUILDING.md)。
 
