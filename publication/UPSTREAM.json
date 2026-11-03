@@ -3,7 +3,7 @@
   "url": "https://github.com/frknkrc44/HMA-OSS",
   "base_commit": "8d8116e300d9c89370fa2091201edc56778eef32",
   "local_version": "8d8116e3-UID3.1",
-  "release_asset": "HMA-OSS-8d8116e3-UID3.1-arm64.zip",
+  "release_asset": "HMA-OSS-8d8116e3-UID3.1-installfix-arm64.zip",
   "maintainer": "Moderate-Qi",
   "prepared": "2026-11-04"
 }

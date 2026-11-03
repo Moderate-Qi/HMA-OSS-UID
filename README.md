@@ -19,7 +19,7 @@
 
 ## 使用方式
 
-1. 从本仓库 Releases 下载 `HMA-OSS-8d8116e3-UID3.1-arm64.zip`，在 SukiSU Ultra 中刷入并重启。
+1. 从本仓库 Releases 下载 `HMA-OSS-8d8116e3-UID3.1-installfix-arm64.zip`，在 SukiSU Ultra 中刷入并重启。
 2. 打开配套 HMA 管理器，按日常需求设置作用应用和隐藏列表。
 3. 在“UID 过滤”页面查看开关与规则状态，`READY` 表示规则已生成。
 4. 调整 UID 开关或规则后，重新打开相关作用应用。
