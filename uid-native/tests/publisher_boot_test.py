@@ -69,7 +69,7 @@ class HMAService {
     val pms = Pms()
     var providerReady = false
     var onQuery: (() -> Unit)? = null
-    fun shouldHide(caller: String, target: String, user: Int): Boolean {
+    fun shouldHide(caller: String, target: String): Boolean {
         onQuery?.invoke()
         check(providerReady) { "Cannot access system provider: 'settings' before system providers are installed!" }
         return target == "hidden"

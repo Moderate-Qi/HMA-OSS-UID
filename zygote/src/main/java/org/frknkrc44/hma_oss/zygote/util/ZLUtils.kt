@@ -20,18 +20,6 @@ object ZLUtils {
      */
     val EmulatedStackFrame.thisObject get() = getArgument(0)!!
 
-    /**
-     * - `args[0]: thisObject`
-     * - `args[1:]: function args`
-     */
-    val EmulatedStackFrame.args get() = dumpArgs()
-
-    /**
-     * - `argTypes[0]: thisObject`
-     * - `argTypes[1:]: function args`
-     */
-    val EmulatedStackFrame.argTypes get() = dumpArgTypes()
-
     internal fun EmulatedStackFrame.dumpArgs(skipFirst: Boolean = false): Array<Any?> {
         return mutableListOf<Any?>().let {
             val begin = if (skipFirst) 1 else 0
@@ -47,19 +35,21 @@ object ZLUtils {
         return mutableListOf<Class<*>>().let {
             val begin = if (skipFirst) 1 else 0
             for (index in begin ..< type().parameterCount()) {
-                it.add(getArgumentType(index))
+                it.add(accessor().getArgumentType(index))
             }
 
             it.toTypedArray()
         }
     }
 
-    /**
-     * - `index == 0: thisObject`
-     * - `index >= 1: function args`
-     */
-    fun EmulatedStackFrame.getArgumentType(index: Int): Class<*> {
-        return accessor().getArgumentType(index)
+    fun EmulatedStackFrame.firstArgWithSimpleName(simpleName: String): Any? {
+        for (index in 1 ..< type().parameterCount()) {
+            if (accessor().getArgumentType(index).simpleName == simpleName) {
+                return getArgument(index)
+            }
+        }
+
+        return null
     }
 
     /**
@@ -183,9 +173,5 @@ object ZLUtils {
         }
 
         return field
-    }
-
-    fun EmulatedStackFrame.shortyEquals(index: Int, shorty: Char): Boolean {
-        return accessor().getArgumentShorty(index) == shorty
     }
 }

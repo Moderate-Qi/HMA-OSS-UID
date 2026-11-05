@@ -397,7 +397,7 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
     fun isAppInGMSIgnoredPackages(caller: String, query: String) =
         (caller in Constants.gmsPackages) && RiskyPackageUtils.instance.appHasGMSConnection(query)
 
-    fun shouldHide(caller: String?, query: String?, userId: Int): Boolean {
+    fun shouldHide(caller: String?, query: String?): Boolean {
         if (caller == null || query == null) return false
         if (caller == BuildConfig.APP_PACKAGE_NAME) return false
         if (caller in Constants.packagesShouldNotHide || query in Constants.packagesShouldNotHide) return false
@@ -437,9 +437,9 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
     fun getRestrictedZygotePermissions(caller: String?) =
         config.scope[caller]?.restrictedZygotePermissions
 
-    fun shouldHideActivityLaunch(caller: String?, query: String?, userId: Int): Boolean {
+    fun shouldHideActivityLaunch(caller: String?, query: String?): Boolean {
         val appConfig = config.scope[caller]
-        return appConfig != null && shouldHide(caller, query, userId) && if (appConfig.invertActivityLaunchProtection) {
+        return appConfig != null && shouldHide(caller, query) && if (appConfig.invertActivityLaunchProtection) {
             config.disableActivityLaunchProtection
         } else {
             !config.disableActivityLaunchProtection
@@ -815,15 +815,16 @@ class HMAService(val pms: IPackageManager, val pmn: Any?) : IHMAService.Stub() {
             config
         }
 
-        if (loading.configVersion != BuildConfig.CONFIG_VERSION) {
-            logW(TAG) { "Config version mismatched, trying to change it" }
-
-            loading.configVersion = BuildConfig.CONFIG_VERSION
-        }
-
         if (config != loading) {
             loading.cleanRemnantsFromConfig()
             config = loading
+        }
+
+        if (config.configVersion != BuildConfig.CONFIG_VERSION) {
+            logW(TAG) { "Config version mismatched, trying to change it" }
+
+            config.configVersion = BuildConfig.CONFIG_VERSION
+            writeConfig(config.toString())
         }
 
         logI(TAG) { "Config loaded" }

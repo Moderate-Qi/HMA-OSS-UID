@@ -82,9 +82,9 @@ extra["targetSdkVer"] = targetSdkVer
 val minorSdkVer = 0
 extra["minorSdkVer"] = minorSdkVer
 
-val appVerCode = 7304664
+val appVerCode = 7304665
 extra["appVerCode"] = appVerCode
-val appVerName = "8d8116e3-UID3.1"
+val appVerName = "5398de45-UID3.1"
 extra["appVerName"] = appVerName
 
 /*

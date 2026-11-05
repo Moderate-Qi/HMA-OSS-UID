@@ -14,7 +14,6 @@ import icu.nullptr.hidemyapplist.common.Constants
 import icu.nullptr.hidemyapplist.common.Utils.binderLocalScope
 import icu.nullptr.hidemyapplist.common.Utils.getCallingUser
 import icu.nullptr.hidemyapplist.common.Utils.getPackageUidCompat
-import icu.nullptr.hidemyapplist.common.Utils.getUserFromCallingUid
 import icu.nullptr.hidemyapplist.common.settings_presets.InputMethodPreset
 import org.frknkrc44.hma_oss.zygote.service.ReturnValue
 import org.frknkrc44.hma_oss.zygote.util.ContextUtils.application
@@ -23,8 +22,8 @@ import org.frknkrc44.hma_oss.zygote.util.Logcat.logD
 import org.frknkrc44.hma_oss.zygote.util.Logcat.logV
 import org.frknkrc44.hma_oss.zygote.util.Logcat.logW
 import org.frknkrc44.hma_oss.zygote.util.ServiceUtils.getPackagesForUidLocal
-import org.frknkrc44.hma_oss.zygote.util.ZLUtils.args
 import org.frknkrc44.hma_oss.zygote.util.ZLUtils.callStaticMethod
+import org.frknkrc44.hma_oss.zygote.util.ZLUtils.dumpArgs
 import org.frknkrc44.hma_oss.zygote.util.ZLUtils.getArgument
 import org.frknkrc44.hma_oss.zygote.util.ZLUtils.returnType
 import org.frknkrc44.hma_oss.zygote.util.ZygoteConstants.GBOARD_CLASS_NAME
@@ -119,7 +118,7 @@ class ImmHook : IFrameworkHook {
             ) { methodName, frame, returnValue ->
                 logD(TAG) { "@$methodName: hook init" }
 
-                val args = frame.args
+                val args = frame.dumpArgs()
                 val currentResult = returnValue.result ?: return@hookAfter
                 logD(TAG) { "@$methodName: Result: $currentResult Args: ${args.contentToString()}" }
 
@@ -262,10 +261,8 @@ class ImmHook : IFrameworkHook {
 
         logD(TAG) { "@getInputMethodList: spoofed input method for $caller" }
 
-        val callingUserId = getUserFromCallingUid(callingUid)
-
         val calculatedList = inList.filter { imInfo ->
-            service.shouldHide(caller, imInfo.packageName, callingUserId)
+            service.shouldHide(caller, imInfo.packageName)
         }
 
         logV(TAG) { "@getInputMethodList*calculator: $callingUid - Calculated: ${calculatedList.map { it.component }}" }
@@ -289,9 +286,7 @@ class ImmHook : IFrameworkHook {
     }
 
     private fun isIMExists(packageName: String, userId: Int = getCallingUser()): Boolean {
-        if (packageName in systemApps) return true
-
-        return binderLocalScope {
+        return packageName in systemApps || binderLocalScope {
             pms.getPackageUidCompat(packageName, PackageManager.MATCH_ALL.toLong(), userId) >= 0
         }
     }

@@ -4,14 +4,11 @@ import android.app.usage.UsageEvents
 import android.app.usage.UsageStats
 import android.content.pm.ParceledListSlice
 import android.os.Build
-import icu.nullptr.hidemyapplist.common.Utils.getCallingUser
 import org.frknkrc44.hma_oss.zygote.util.CollectionUtils.firstOrNullWithType
-import org.frknkrc44.hma_oss.zygote.util.CollectionUtils.firstWithType
 import org.frknkrc44.hma_oss.zygote.util.CollectionUtils.lastOrNullWithType
-import org.frknkrc44.hma_oss.zygote.util.CollectionUtils.lastWithType
 import org.frknkrc44.hma_oss.zygote.util.Logcat.logD
 import org.frknkrc44.hma_oss.zygote.util.Logcat.logI
-import org.frknkrc44.hma_oss.zygote.util.ZLUtils.args
+import org.frknkrc44.hma_oss.zygote.util.ZLUtils.dumpArgs
 import org.frknkrc44.hma_oss.zygote.util.ZLUtils.getObjectField
 import org.frknkrc44.hma_oss.zygote.util.ZLUtils.setObjectField
 import org.frknkrc44.hma_oss.zygote.util.ZygoteConstants.USAGE_STATS_BINDER_SERVICE_CLASS
@@ -34,21 +31,15 @@ class UsageStatsHook : IFrameworkHook {
                 @Suppress("UNCHECKED_CAST")
                 val result = returnValue.result as? ParceledListSlice<UsageStats> ?: return@hookAfter
 
-                val args = frame.args
+                val args = frame.dumpArgs()
                 val caller = args.lastOrNullWithType<String>() ?: return@hookAfter
                 val isHookEnabled = service.isHookEnabled(caller)
                 if (!isHookEnabled) return@hookAfter
 
-                val userId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    args.lastWithType<Int>()
-                } else {
-                    getCallingUser()
-                }
-
                 logD(TAG) { "@$methodName: $caller requested stats" }
 
                 val filtered = result.list.filterTo(mutableListOf()) {
-                    !service.shouldHide(caller, it.packageName, userId)
+                    !service.shouldHide(caller, it.packageName)
                 }
 
                 val count = result.list.size - filtered.size
@@ -70,14 +61,12 @@ class UsageStatsHook : IFrameworkHook {
                     helperMethod,
                 ) { methodName, frame, returnValue ->
                     val result = returnValue.result as? UsageEvents ?: return@hookAfter
-                    val args = frame.args
+                    val args = frame.dumpArgs()
 
                     applyUsageEventsHiding(
                         methodName,
                         result,
-                        { args.firstOrNullWithType() },
-                        { args.firstWithType() },
-                    )
+                    ) { args.firstOrNullWithType() }
                 }
             }
 
@@ -87,14 +76,12 @@ class UsageStatsHook : IFrameworkHook {
                     "queryEvents",
                 ) { methodName, frame, returnValue ->
                     val result = returnValue.result as? UsageEvents ?: return@hookAfter
-                    val args = frame.args
+                    val args = frame.dumpArgs()
 
                     applyUsageEventsHiding(
                         methodName,
                         result,
-                        { args.firstOrNullWithType() },
-                        { getCallingUser() },
-                    )
+                    ) { args.firstOrNullWithType() }
                 }
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
@@ -103,14 +90,12 @@ class UsageStatsHook : IFrameworkHook {
                         "queryEventsWithFilter",
                     ) { methodName, frame, returnValue ->
                         val result = returnValue.result as? UsageEvents ?: return@hookAfter
-                        val args = frame.args
+                        val args = frame.dumpArgs()
 
                         applyUsageEventsHiding(
                             methodName,
                             result,
-                            { args.firstOrNullWithType() },
-                            { getCallingUser() },
-                        )
+                        ) { args.firstOrNullWithType() }
                     }
                 }
 
@@ -119,14 +104,12 @@ class UsageStatsHook : IFrameworkHook {
                     "queryEventsForUser",
                 ) { methodName, frame, returnValue ->
                     val result = returnValue.result as? UsageEvents ?: return@hookAfter
-                    val args = frame.args
+                    val args = frame.dumpArgs()
 
                     applyUsageEventsHiding(
                         methodName,
                         result,
-                        { args.firstOrNullWithType() },
-                        { args.firstWithType() },
-                    )
+                    ) { args.firstOrNullWithType() }
                 }
             }
 
@@ -135,14 +118,12 @@ class UsageStatsHook : IFrameworkHook {
                 "queryEventsForPackageForUser",
             ) { methodName, frame, returnValue ->
                 val result = returnValue.result as? UsageEvents ?: return@hookAfter
-                val args = frame.args
+                val args = frame.dumpArgs()
 
                 applyUsageEventsHiding(
                     methodName,
                     result,
-                    { args.lastOrNullWithType() },
-                    { args.lastWithType() },
-                )
+                ) { args.lastOrNullWithType() }
             }
         }
     }
@@ -152,7 +133,6 @@ class UsageStatsHook : IFrameworkHook {
         methodName: String,
         events: UsageEvents,
         getCaller: () -> String?,
-        getUserId: () -> Int,
     ) {
         val eventsList = getObjectField(events, "mEventsToWrite") as? List<UsageEvents.Event> ?: return
 
@@ -160,9 +140,8 @@ class UsageStatsHook : IFrameworkHook {
         val isHookEnabled = service.isHookEnabled(caller)
         if (!isHookEnabled) return
 
-        val userId = getUserId()
         val filtered = eventsList.filterTo(mutableListOf()) {
-            !service.shouldHide(caller, it.packageName, userId)
+            !service.shouldHide(caller, it.packageName)
         }
 
         val count = eventsList.size - filtered.size

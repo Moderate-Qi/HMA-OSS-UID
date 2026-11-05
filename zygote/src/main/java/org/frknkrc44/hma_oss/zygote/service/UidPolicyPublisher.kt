@@ -108,7 +108,7 @@ class UidPolicyPublisher(
                         if (configured.isEmpty()) continue
                         val hidden = byUid.filter { (targetUid, targets) ->
                             targetUid != uid && targets.all { target ->
-                                configured.any { caller -> service.shouldHide(caller, target.packageName, user) }
+                                configured.any { caller -> service.shouldHide(caller, target.packageName) }
                             }
                         }.keys.sorted()
                         // Never truncate: partial hiding would silently change the policy.

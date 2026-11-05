@@ -5,16 +5,14 @@ import android.content.pm.ResolveInfo
 import android.os.Build
 import icu.nullptr.hidemyapplist.common.Constants
 import icu.nullptr.hidemyapplist.common.Utils.getPackageName
-import icu.nullptr.hidemyapplist.common.Utils.getUserFromCallingUid
 import org.frknkrc44.hma_oss.zygote.util.CollectionUtils.firstOrNullWithType
 import org.frknkrc44.hma_oss.zygote.util.CollectionUtils.firstWithType
 import org.frknkrc44.hma_oss.zygote.util.Logcat.logD
 import org.frknkrc44.hma_oss.zygote.util.Logcat.logI
 import org.frknkrc44.hma_oss.zygote.util.Logcat.logV
 import org.frknkrc44.hma_oss.zygote.util.ServiceUtils.getPackagesForUidLocal
-import org.frknkrc44.hma_oss.zygote.util.ZLUtils.args
+import org.frknkrc44.hma_oss.zygote.util.ZLUtils.dumpArgs
 import org.frknkrc44.hma_oss.zygote.util.ZLUtils.getArgument
-import org.frknkrc44.hma_oss.zygote.util.ZLUtils.getIntField
 import org.frknkrc44.hma_oss.zygote.util.ZLUtils.getObjectField
 import org.frknkrc44.hma_oss.zygote.util.ZLUtils.getStaticIntField
 import org.frknkrc44.hma_oss.zygote.util.ZLUtils.thisObject
@@ -53,10 +51,9 @@ class ActivityHook : IFrameworkHook {
                 val list = returnValue.result as? List<ResolveInfo>
                 if (list.isNullOrEmpty()) return@hookAfter
 
-                val callingUid = frame.args.firstWithType<Int>()
+                val callingUid = frame.dumpArgs().firstWithType<Int>()
                 if (callingUid == Constants.UID_SYSTEM) return@hookAfter
 
-                val callingUserId = getUserFromCallingUid(callingUid)
                 val callingApps = getPackagesForUidLocal(pms, callingUid)
                 val caller = callingApps.firstOrNull { service.isHookEnabled(it) }
                 if (caller != null) {
@@ -67,7 +64,7 @@ class ActivityHook : IFrameworkHook {
 
                         logV(TAG) { "@$methodName: Checking $targetApp for $caller" }
 
-                        (!service.shouldHideActivityLaunch(caller, targetApp, callingUserId)).apply {
+                        (!service.shouldHideActivityLaunch(caller, targetApp)).apply {
                             if (!this) {
                                 logD(TAG) { "@$methodName: insecure query from $caller, target: $targetApp" }
                             }
@@ -102,12 +99,11 @@ class ActivityHook : IFrameworkHook {
                             "executeRequest",
                         ) { _, frame, returnValue ->
                             val request = frame.getArgument(1) ?: return@hookBefore
-                            val callingUserId = getUserFromCallingUid(getIntField(request, "callingUid"))
                             val caller = getObjectField(request, "callingPackage") as? String ?: return@hookBefore
                             val intent = getObjectField(request, "intent") as? Intent ?: return@hookBefore
                             val targetApp = intent.component?.packageName
 
-                            if (service.shouldHideActivityLaunch(caller, targetApp, callingUserId)) {
+                            if (service.shouldHideActivityLaunch(caller, targetApp)) {
                                 logD(TAG) { "@executeRequest: insecure query from $caller, target: ${intent.component}" }
                                 returnValue.result = fakeReturnCode
                                 service.increaseALFilterCount(caller)
@@ -119,13 +115,12 @@ class ActivityHook : IFrameworkHook {
                             "startActivity",
                         ) { _, frame, returnValue ->
                             // we have no way other than hardcoding, it is 13th argument in AOSP code
-                            val args = frame.args
-                            val callingUserId = getUserFromCallingUid(args[13] as Int)
+                            val args = frame.dumpArgs()
                             val caller = args.firstOrNullWithType<String>() ?: return@hookBefore
                             val intent = args.firstOrNullWithType<Intent>() ?: return@hookBefore
                             val targetApp = intent.component?.packageName
 
-                            if (service.shouldHideActivityLaunch(caller, targetApp, callingUserId)) {
+                            if (service.shouldHideActivityLaunch(caller, targetApp)) {
                                 logD(TAG) { "@startActivity: insecure query from $caller, target: ${intent.component}" }
                                 returnValue.result = fakeReturnCode
                                 service.increaseALFilterCount(caller)
@@ -138,12 +133,11 @@ class ActivityHook : IFrameworkHook {
                         "execute",
                     ) { _, frame, returnValue ->
                         val request = getObjectField(frame.thisObject, "mRequest") ?: return@hookBefore
-                        val callingUserId = getUserFromCallingUid(getIntField(request, "callingUid"))
                         val caller = getObjectField(request, "callingPackage") as? String ?: return@hookBefore
                         val intent = getObjectField(request, "intent") as? Intent ?: return@hookBefore
                         val targetApp = intent.component?.packageName
 
-                        if (service.shouldHideActivityLaunch(caller, targetApp, callingUserId)) {
+                        if (service.shouldHideActivityLaunch(caller, targetApp)) {
                             logD(TAG) { "@executeRequest: insecure query from $caller, target: ${intent.component}" }
                             returnValue.result = fakeReturnCode
                             service.increaseALFilterCount(caller)
