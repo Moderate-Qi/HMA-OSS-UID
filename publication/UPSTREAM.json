@@ -1,9 +1,10 @@
 {
   "project": "HMA-OSS-UID",
   "url": "https://github.com/frknkrc44/HMA-OSS",
-  "base_commit": "5398de452582353467235fc27dadee845e5d8e13",
-  "local_version": "5398de45-UID3.1",
-  "release_asset": "HMA-OSS-5398de45-UID3.1-arm64.zip",
+  "base_commit": "fe7a36799f040a79c666fb05b8479e69854656df",
+  "local_version": "175-UID3.1",
+  "release_asset": "HMA-OSS-175-UID3.1-arm64.zip",
   "maintainer": "Moderate-Qi",
-  "prepared": "2026-11-05"
+  "prepared": "2026-11-09",
+  "upstream_tag": "oss-175"
 }
