@@ -31,7 +31,7 @@ keytool -exportcert -keystore /path/to/local-signing.jks -alias YOUR_ALIAS -file
 使用实际 APK 输出路径打包：
 
 ```sh
-python publication/package_module.py --manager app/build/outputs/apk/release/HMA-OSS-5398de45-UID3.1-release.apk --backend zygote/build/outputs/apk/release/zygote-release.apk --native uid-native/build/arm64-v8a.so --helper publication/manager-migration/dex/classes.dex --certificate release-input/manager-cert.der --output publication-output/HMA-OSS-5398de45-UID3.1-arm64.zip
+python publication/package_module.py --manager app/build/outputs/apk/release/HMA-OSS-175-UID3.1-release.apk --backend zygote/build/outputs/apk/release/zygote-release.apk --native uid-native/build/arm64-v8a.so --helper publication/manager-migration/dex/classes.dex --certificate release-input/manager-cert.der --output publication-output/HMA-OSS-175-UID3.1-arm64.zip
 ```
 
 manager 与 backend 使用同一签名，backend 构建时生成的 Magic.java 记录该公开证书。打包入口核对 manager 内嵌 payload 与外部 DEX、SO 的一致性，生成安装器实际读取的资源校验表。签名验收使用 SDK 的 `apksigner verify --verbose --print-certs` 分别核对两个 APK。
