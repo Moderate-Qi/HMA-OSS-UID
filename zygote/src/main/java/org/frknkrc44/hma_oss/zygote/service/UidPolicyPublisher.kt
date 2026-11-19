@@ -4,7 +4,7 @@ import android.content.pm.ApplicationInfo
 import android.os.Process
 import android.os.SystemProperties
 import android.system.Os
-import icu.nullptr.hidemyapplist.common.Utils.binderLocalScope
+import org.frknkrc44.hma_oss.zygote.util.ServiceUtils.binderLocalScope
 import icu.nullptr.hidemyapplist.common.Utils.getInstalledApplicationsCompat
 import org.frknkrc44.hma_oss.common.BuildConfig
 import org.frknkrc44.hma_oss.zygote.util.Logcat.logE
@@ -53,7 +53,7 @@ class UidPolicyPublisher(
 
     private fun publishWhenReady(version: Long, failures: Int) {
         if (synchronized(schedulingLock) { version != requestVersion }) return
-        val config = service.config
+        val config = service.getConfig()
         if (config.uidFilterEnabled && config.uidFilterRevision == 3 &&
             !SystemProperties.getBoolean("sys.boot_completed", false)) {
             // Settings/WebView providers are not available during early system_server startup.
@@ -87,7 +87,7 @@ class UidPolicyPublisher(
         try {
             root.mkdirs()
             Os.chmod(root.path, 0x1ed) // 0755, owned by system; no app write access.
-            val snapshot = service.config
+            val snapshot = service.getConfig()
             if (!snapshot.uidFilterEnabled || snapshot.uidFilterRevision != 3) {
                 disableImmediately()
                 return true
@@ -124,7 +124,7 @@ class UidPolicyPublisher(
             atomicWrite(File(directory, "summary"), "callers=$callers\nversion=${BuildConfig.APP_VERSION_NAME}\n")
             val bootId = File("/proc/sys/kernel/random/boot_id").readText().trim()
             synchronized(publicationLock) {
-                if (service.config !== snapshot || (!snapshot.uidFilterEnabled || snapshot.uidFilterRevision != 3)) {
+                if (service.getConfig() !== snapshot || (!snapshot.uidFilterEnabled || snapshot.uidFilterRevision != 3)) {
                     schedule()
                     return true
                 }

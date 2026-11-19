@@ -1,4 +1,4 @@
-"""Exercise the built configuration serializer across the upstream 93 -> 94 change.
+"""Exercise the built configuration serializer across the upstream 94 -> 95 change.
 
 Fixtures remain on disk. Set JAVA_HOME and ANDROID_HOME to the build toolchain.
 """
@@ -28,7 +28,7 @@ public class ConfigUpgradeTest {
     }
     public static void main(String[] args) {
         JsonConfig fresh = new JsonConfig();
-        verify(fresh.getConfigVersion() == 94, "upstream configuration version 94");
+        verify(fresh.getConfigVersion() == 95, "upstream configuration version 95");
         verify(fresh.getUidFilterEnabled() && fresh.getUidFilterRevision() == 3,
                "fresh configuration defaults ON revision 3");
         JsonConfig missing = JsonConfig.Companion.parse("{}");
@@ -37,7 +37,7 @@ public class ConfigUpgradeTest {
             + "\\"ignoreBrandProtections\\":false,\\"uidFilterEnabled\\":true,\\"uidFilterRevision\\":3,"
             + "\\"scope\\":{\\"example.target\\":{\\"extraAppList\\":[\\"example.hidden\\"]}}}";
         JsonConfig migrated = JsonConfig.Companion.parse(previous);
-        migrated.setConfigVersion(94);
+        migrated.setConfigVersion(95);
         JsonConfig saved = JsonConfig.Companion.parse(migrated.toString());
         verify(saved.getUidFilterEnabled() && saved.getUidFilterRevision() == 3,
                "ON survives old fields removal and save/reload");
@@ -47,7 +47,7 @@ public class ConfigUpgradeTest {
             && !saved.toString().contains("ignoreBrandProtections"), "retired upstream fields removed");
         JsonConfig off = JsonConfig.Companion.parse(previous.replace("\\"uidFilterEnabled\\":true",
                                                                   "\\"uidFilterEnabled\\":false"));
-        off.setConfigVersion(94);
+        off.setConfigVersion(95);
         verify(!JsonConfig.Companion.parse(off.toString()).getUidFilterEnabled(),
                "explicit manual OFF survives upgrade and save/reload");
     }

@@ -65,7 +65,8 @@ class Pms {
     val apps = listOf(ApplicationInfo(10050, "caller"), ApplicationInfo(10051, "hidden"))
 }
 class HMAService {
-    var config = Config()
+    @JvmField var config = Config()
+    fun getConfig() = config
     val pms = Pms()
     var providerReady = false
     var onQuery: (() -> Unit)? = null
@@ -79,6 +80,7 @@ class HMAService {
     'Utility.kt': '''package org.frknkrc44.hma_oss.zygote.util
 object UserManagerUtils { val userIds = intArrayOf(0) }
 object ActivityManagerUtils { fun forceStopPackage(name: String, user: Int) {} }
+object ServiceUtils { fun <T> binderLocalScope(block: () -> T): T = block() }
 object Logcat {
     var failures = 0
     fun logE(tag: String, cause: Throwable, message: () -> String) { failures++ }
