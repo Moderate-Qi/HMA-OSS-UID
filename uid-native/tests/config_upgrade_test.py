@@ -33,7 +33,7 @@ public class ConfigUpgradeTest {
                "fresh configuration defaults ON revision 3");
         JsonConfig missing = JsonConfig.Companion.parse("{}");
         verify(missing.getUidFilterEnabled(), "legacy missing UID fields defaults ON");
-        String previous = "{\\"configVersion\\":93,\\"webViewProtection\\":true,"
+        String previous = "{\\"configVersion\\":94,\\"webViewProtection\\":true,"
             + "\\"ignoreBrandProtections\\":false,\\"uidFilterEnabled\\":true,\\"uidFilterRevision\\":3,"
             + "\\"scope\\":{\\"example.target\\":{\\"extraAppList\\":[\\"example.hidden\\"]}}}";
         JsonConfig migrated = JsonConfig.Companion.parse(previous);
@@ -43,6 +43,8 @@ public class ConfigUpgradeTest {
                "ON survives old fields removal and save/reload");
         verify(saved.getScope().get("example.target").getExtraAppList().contains("example.hidden"),
                "target and hidden package rules survive upgrade");
+        verify(saved.getScope().get("example.target").getExtraSettings().getSettingsList().isEmpty(),
+               "new per-app settings default survives upgrade");
         verify(!saved.toString().contains("webViewProtection")
             && !saved.toString().contains("ignoreBrandProtections"), "retired upstream fields removed");
         JsonConfig off = JsonConfig.Companion.parse(previous.replace("\\"uidFilterEnabled\\":true",
